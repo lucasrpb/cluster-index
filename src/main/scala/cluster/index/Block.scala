@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 
 class Block[T: ClassTag, K: ClassTag, V: ClassTag](val id: T,
                                                    val MIN: Int,
-                                                   val MAX: Int)(implicit ord: Ordering[K]){
+                                                   val MAX: Int)(implicit ord: Ordering[K]) {
 
   val MIDDLE = MIN
 
@@ -158,7 +158,12 @@ class Block[T: ClassTag, K: ClassTag, V: ClassTag](val id: T,
     copy
   }
 
-  def max: K = keys(size - 1)._1
+  def max: Option[K] = {
+    if(isEmpty()) return None
+    Some(keys(size - 1)._1)
+  }
+
+  def hasToSplit(): Boolean = size >= MIN
 
   def isFull(): Boolean = size == MAX
   def isEmpty(): Boolean = size == 0
