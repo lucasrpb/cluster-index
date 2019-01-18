@@ -65,6 +65,7 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
 
     val nmax = index.max
 
+
     if(max.isDefined && nmax.isDefined && !ord.equiv(max.get, nmax.get)){
       return meta.execute(Seq(
         Delete(Seq(max.get)),
