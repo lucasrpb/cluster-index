@@ -66,6 +66,9 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
     }
 
     if(max.isDefined && index.isEmpty()){
+
+      println(s"EMPTY PARTITION...\n")
+
       return meta.execute(Seq(Delete(Seq(max.get)))) && root.compareAndSet(old, index)
     }
 
