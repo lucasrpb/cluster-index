@@ -23,6 +23,27 @@ class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
     Some(p.keys(if(pos < p.size) pos else pos - 1))
   }
 
+  def findSibling(k: K): Option[(K, Partition[T, K, V])] = {
+    val index = root.get()
+
+    if(index.isEmpty()) return None
+
+    val (found, pos) = index.find(k, 0, index.size - 1)
+
+    if(!found) return None
+
+    var idx = pos + 1
+
+    if(idx < index.size){
+      return Some(index.keys(idx))
+    }
+
+    idx = pos - 1
+    if(idx < 0) return None
+
+    Some(index.keys(idx))
+  }
+
   def execute(cmd: Command[T, K, Partition[T, K, V]], index: Block[T, K, Partition[T, K, V]]): Boolean = {
     cmd match {
       case Insert(data) => index.insert(data)._1

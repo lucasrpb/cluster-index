@@ -163,12 +163,47 @@ class Block[T: ClassTag, K: ClassTag, V: ClassTag](val id: T,
     Some(keys(size - 1)._1)
   }
 
-  def hasToSplit(): Boolean = size >= MIN
+  def overflow(): Boolean = size >= MIN
+  def underflow(): Boolean = size <= MIN/2
 
   def isFull(): Boolean = size == MAX
   def isEmpty(): Boolean = size == 0
-  def hasMinimumKeys(): Boolean = size >= MIN
-  def hasEnoughKeys(): Boolean = size > MIN
+
+  def canBorrowTo(target: Block[T, K, V]): Boolean = {
+    val n = MIN - target.size
+    size - MIN >= n
+  }
+
+  def borrowRightTo(target: Block[T, K, V]): Block[T, K, V] = {
+    val n = MIN - target.size
+
+    val list = slice(0, n)
+    target.insert(list)
+
+    target
+  }
+
+  def borrowLeftTo(target: Block[T, K, V]): Block[T, K, V] = {
+    val n = MIN - target.size
+
+    val list = slice(size - n, n)
+    target.insert(list)
+
+    target
+  }
+
+  def merge(right: Block[T, K, V]): Block[T, K, V] = {
+    val len = right.size
+    var j = size
+
+    for(i<-0 until len){
+      keys(j) = right.keys(i)
+      size += 1
+      j += 1
+    }
+
+    this
+  }
 
   def inOrder(): Seq[(K, V)] = {
     if(isEmpty()) return Seq.empty[(K, V)]

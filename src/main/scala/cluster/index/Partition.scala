@@ -4,6 +4,8 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 import commands._
+
+import scala.collection.script.Remove
 import scala.reflect.ClassTag
 
 class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
@@ -41,7 +43,7 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
     }
 
     // Fix the method isFull() in Index...
-    if(index.hasToSplit()){
+    if(index.overflow()){
 
       println(s"FULL PARTITION... ${index.size} ${index.MAX}\n")
 
@@ -63,8 +65,11 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
       return meta.execute(cmds) && root.compareAndSet(old, index)
     }
 
-    val nmax = index.max
+    if(max.isDefined && index.isEmpty()){
+      return meta.execute(Seq(Delete(Seq(max.get)))) && root.compareAndSet(old, index)
+    }
 
+    val nmax = index.max
 
     if(max.isDefined && nmax.isDefined && !ord.equiv(max.get, nmax.get)){
       return meta.execute(Seq(
