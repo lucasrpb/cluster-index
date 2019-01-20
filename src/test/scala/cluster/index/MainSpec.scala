@@ -13,13 +13,13 @@ class MainSpec extends FlatSpec {
     override def compare(x: Int, y: Int): Int =  x - y
   }
 
-  val MAX_VALUE = 1000//Int.MaxValue
+  val MAX_VALUE = Int.MaxValue
 
   def test(): Unit = {
 
     val rand = ThreadLocalRandom.current()
 
-    val DATA_ORDER = 50//rand.nextInt(2, 10)
+    val DATA_ORDER = 100//rand.nextInt(2, 10)
     val META_ORDER = 1000//rand.nextInt(2, 10)
 
     val DATA_MAX = DATA_ORDER*2 - 1
@@ -31,66 +31,95 @@ class MainSpec extends FlatSpec {
     val meta = new Meta[String, Int, Int](META_MIN, META_MAX)
     val client = new Client[String, Int, Int](DATA_MIN, DATA_MAX, meta)
 
-    var DATA = Seq.empty[(Int, Int)]
+    def transaction(): Seq[Command[String, Int, Int]] = {
 
-    def insert(): Unit = {
+      var data = client.inOrder()
+      var commands = Seq[Command[String, Int, Int]]()
 
-      val data = client.inOrder()
+      def insert(): Unit = {
+
+        var list = Seq.empty[(Int, Int)]
+        val n = rand.nextInt(1, 5)
+
+        for(i<-0 until n){
+          val k = rand.nextInt(0, MAX_VALUE)
+
+          if(!data.exists(_._1 == k) && !list.exists(_._1 == k)){
+            list = list :+ k -> k
+          }
+        }
+
+        commands = commands :+ Add[String, Int, Int](list)
+        data = data ++ list
+
+      }
+
+      def update(): Unit = {
+        val len = data.length
+
+        if(len == 0) return
+
+        val values = (if(len < 2) data else scala.util.Random.shuffle(data).slice(0, rand.nextInt(1, len)))
+          .map{case (k, _) => k -> rand.nextInt(0, MAX_VALUE)}
+
+        commands = commands :+ Put[String, Int, Int](values)
+        data = data.filterNot{case (k, _) => values.exists(_._1 == k)}
+        data = data ++ values
+      }
+
+      def delete(): Unit = {
+        val len = data.length
+
+        if(len == 0) return
+
+        val keys = (if(len < 2) data else scala.util.Random.shuffle(data).slice(0, rand.nextInt(1, len)))
+            .map(_._1)
+
+        commands = commands :+ Delete[String, Int, Int](keys)
+        data = data.filterNot{case (k, _) => keys.contains(k)}
+      }
 
       val n = rand.nextInt(1, DATA_MIN)
-      var list = Seq.empty[(Int, Int)]
 
       for(i<-0 until n){
-        val k = rand.nextInt(0, MAX_VALUE)
-
-        if(!data.exists(_._1 == k) && !list.exists(_._1 == k)){
-          list = list :+ k -> k
+        rand.nextBoolean() match {
+          case true => insert()
+          case false => rand.nextBoolean() match {
+            case true => update()
+            case _ => delete()
+          }
+          //case _ =>
         }
       }
 
-      if(client.insert(list)){
-        DATA = DATA ++ list
-      }
+      commands
     }
 
-    def remove(): Unit = {
-      val data = client.inOrder()
+    val n = 10
 
-      val len = data.length
-      val keys = scala.util.Random.shuffle(if(len <= 2) data else data.slice(0, rand.nextInt(2, data.length)))
-        .map(_._1)
-
-      if(client.remove(keys)){
-        DATA = DATA.filterNot {case (k, _) => keys.contains(k)}
-      }
-    }
-
-    def update(): Unit = {
-      val data = client.inOrder()
-
-      val len = data.length
-      val values = scala.util.Random.shuffle(if(len <= 2) data else data.slice(0, rand.nextInt(2, data.length)))
-        .map{case (k, _) => k -> rand.nextInt(0, MAX_VALUE)}
-
-      if(client.update(values)){
-        DATA = DATA.filterNot {case (k, _) => values.exists(_._1 == k)}
-        DATA = DATA ++ values
-      }
-    }
-
-    val n = 100
+    var data = Seq.empty[(Int, Int)]
 
     for(i<-0 until n){
-      rand.nextBoolean() match {
-        case true => insert()
-        case false => rand.nextBoolean() match {
-          case true => update()
-          case false => remove()
+      val commands = transaction()
+
+      if(client.execute(commands)){
+
+        //println(s"commands: ${commands}\n")
+
+        commands.foreach { cmd =>
+          cmd match {
+            case Add(list) => data = data ++ list
+            case Put(list) =>
+              data = data.filterNot{case (k, _) => list.exists(_._1 == k)}
+              data = data ++ list
+
+            case Delete(keys) => data = data.filterNot{case (k, _) => keys.contains(k)}
+          }
         }
       }
     }
 
-    val dsorted = DATA.sortBy(_._1)
+    val dsorted = data.sortBy(_._1)
     val isorted = client.inOrder()
 
     println(s"dsorted: ${dsorted}\n")

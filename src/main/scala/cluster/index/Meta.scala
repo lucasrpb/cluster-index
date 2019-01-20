@@ -46,8 +46,8 @@ class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
 
   def execute(cmd: Command[T, K, Partition[T, K, V]], index: Block[T, K, Partition[T, K, V]]): Boolean = {
     cmd match {
-      case Insert(data) => index.insert(data)._1
-      case Update(data) => index.update(data)._1
+      case Add(data) => index.insert(data)._1
+      case Put(data) => index.update(data)._1
       case Delete(keys) => index.remove(keys)._1
     }
   }

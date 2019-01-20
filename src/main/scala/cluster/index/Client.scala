@@ -8,11 +8,59 @@ class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
                                                     val META_ORDER: Int,
                                                     val meta: Meta[T, K, V])(implicit val ord: Ordering[K]) {
 
-  /*def parseInsert(data: Seq[(K, V)], insertions: TrieMap[Partition[T, K, V], Seq[(K, V)]]): Unit = {
+  def read(keys: Seq[K]): TrieMap[K, Option[V]] = {
+
+    val data = TrieMap[K, Option[V]]()
+
+    val sorted = keys.sorted
+    val size = sorted.length
+    var pos = 0
+
+    val reads = TrieMap[Partition[T, K, V], Seq[K]]()
+
+    while(pos < size) {
+
+      var list = sorted.slice(pos, size)
+      val k = list(0)
+
+      val n = meta.find(k) match {
+        case None => list.length
+        case Some((max, p)) =>
+
+          val idx = list.indexWhere {k => ord.gt(k, max)}
+          list = if(idx > 0) list.slice(0, idx) else list
+
+          reads.get(p) match {
+            case None => reads += p -> list
+            case Some(l) => reads.update(p, l ++ list)
+          }
+
+          list.length
+      }
+
+      pos += n
+    }
+
+    if(reads.isEmpty){
+      return data
+    }
+
+    reads.foreach { case (p, keys) =>
+      p.read(keys).foreach { case (k, v) =>
+        data.put(k, v)
+      }
+    }
+
+    data
+  }
+
+  def parseAdd(data: Seq[(K, V)], partitions: TrieMap[Partition[T, K, V], Seq[commands.Command[T, K, V]]]): Unit = {
 
     val sorted = data.sortBy(_._1)
     val size = sorted.length
     var pos = 0
+
+    val insertions = TrieMap[Partition[T, K, V], Seq[(K, V)]]()
 
     while(pos < size){
 
@@ -36,40 +84,18 @@ class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
 
       pos += n
     }
-  }
 
-  def parseRemove(keys: Seq[K], removals: TrieMap[Partition[T, K, V], Seq[K]]): Unit = {
-
-    val sorted = keys.sorted
-
-    val size = sorted.length
-    var pos = 0
-
-    while(pos < size) {
-
-      var list = sorted.slice(pos, size)
-      val k = list(0)
-
-      val n = meta.find(k) match {
-        case None => list.length
-        case Some((max, p)) =>
-
-          val idx = list.indexWhere {k => ord.gt(k, max)}
-          list = if(idx > 0) list.slice(0, idx) else list
-
-          removals.get(p) match {
-            case None => removals += p -> list
-            case Some(l) => removals.update(p, l ++ list)
-          }
-
-          list.length
+    insertions.foreach { case (p, list) =>
+      partitions.get(p) match {
+        case None => partitions.put(p, Seq(Add(list)))
+        case Some(cmds) => partitions.update(p, cmds :+ Add[T, K, V](list))
       }
-
-      pos += n
     }
   }
 
-  def parseUpdate(data: Seq[(K, V)], updates: TrieMap[Partition[T, K, V], Seq[(K, V)]]): Unit = {
+  def parsePut(data: Seq[(K, V)], partitions: TrieMap[Partition[T, K, V], Seq[commands.Command[T, K, V]]]): Unit = {
+
+    val updates = TrieMap[Partition[T, K, V], Seq[(K, V)]]()
 
     val sorted = data.sortBy(_._1)
 
@@ -98,184 +124,91 @@ class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
 
       pos += n
     }
+
+    updates.foreach { case (p, list) =>
+      partitions.get(p) match {
+        case None => partitions.put(p, Seq(Put(list)))
+        case Some(cmds) => partitions.update(p, cmds :+ Put[T, K, V](list))
+      }
+    }
   }
 
-  def execute(insert: Seq[(K, V)], remove: Seq[K], update: Seq[(K, V)]): Boolean = {
-
-    val insertions = TrieMap[Partition[T, K, V], Seq[(K, V)]]()
+  def parseDelete(keys: Seq[K], partitions: TrieMap[Partition[T, K, V], Seq[commands.Command[T, K, V]]]): Unit = {
     val removals = TrieMap[Partition[T, K, V], Seq[K]]()
-    val updates = TrieMap[Partition[T, K, V], Seq[(K, V)]]()
 
-    parseInsert(insert, insertions)
-    parseRemove(remove, removals)
-    parseUpdate(update, updates)
+    val sorted = keys.sorted
 
-    val commands = TrieMap[Partition[T, K, V], Seq[Command[T, K, V]]]()
+    val size = sorted.length
+    var pos = 0
 
-    if(meta.isEmpty()){
+    while(pos < size) {
 
-      println(s"no partition...\n")
+      var list = sorted.slice(pos, size)
+      val k = list(0)
 
-      val p = new Partition[T, K, V](DATA_ORDER, META_ORDER, meta)
-      return p.execute(Seq(
-        Insert(insert),
-        Delete(remove),
-        Update(update)
-      ))
-    }
+      val n = meta.find(k) match {
+        case None => list.length
+        case Some((max, p)) =>
 
-    insertions.foreach { case (p, list) =>
-      commands.put(p, Seq[Command[T, K, V]](Insert(list)))
+          val idx = list.indexWhere {k => ord.gt(k, max)}
+          list = if(idx > 0) list.slice(0, idx) else list
+
+          removals.get(p) match {
+            case None => removals += p -> list
+            case Some(l) => removals.update(p, l ++ list)
+          }
+
+          list.length
+      }
+
+      pos += n
     }
 
     removals.foreach { case (p, keys) =>
-      commands.get(p) match {
-        case None => commands.put(p, Seq[Command[T, K, V]](Delete(keys)))
-        case Some(cmds) => commands.update(p, cmds :+ Delete[T, K, V](keys))
+      partitions.get(p) match {
+        case None => partitions.put(p, Seq(Delete(keys)))
+        case Some(cmds) => partitions.update(p, cmds :+ Delete[T, K, V](keys))
+      }
+    }
+  }
+
+  def execute(commands: Seq[Command[T, K, V]]): Boolean = {
+
+    val partitions = TrieMap[Partition[T, K, V], Seq[Command[T, K, V]]]()
+
+    if(meta.isEmpty()){
+      println(s"\nno partition...\n")
+      
+      val p = new Partition[T, K, V](DATA_ORDER, META_ORDER, meta)
+      return p.execute(commands)
+    }
+
+    commands.foreach { case cmd =>
+      cmd match {
+        case Add(data) => parseAdd(data, partitions)
+        case Put(data) => parsePut(data, partitions)
+        case Delete(keys) => parseDelete(keys, partitions)
       }
     }
 
-    updates.foreach { case (p, list) =>
-      commands.get(p) match {
-        case None => commands.put(p, Seq[Command[T, K, V]](Update(list)))
-        case Some(cmds) => commands.update(p, cmds :+ Update[T, K, V](list))
-      }
-    }
+    val metaBackup = meta.root.get()
 
-    commands.foreach { case (p, cmds) =>
+    val backups = partitions.map { case (p, _) =>
+      p -> p.root.get()
+    }.toMap
+
+    val codes = partitions.map { case (p, cmds) =>
       p.execute(cmds)
     }
 
-    true
-  }*/
+    if(codes.exists(_ == false)){
+      meta.root.set(metaBackup)
 
-  def insert(data: Seq[(K, V)]): Boolean = {
-
-    val insertions =  TrieMap[Partition[T, K, V], Seq[(K, V)]]()
-
-    val sorted = data.sortBy(_._1)
-    val size = sorted.length
-    var pos = 0
-
-    while(pos < size){
-
-      var list = sorted.slice(pos, size)
-      val (k, _) = list(0)
-
-      val n = meta.find(k) match {
-        case None => list.length
-        case Some((max, p)) =>
-
-          val idx = list.indexWhere {case (k, _) => ord.gt(k, max)}
-          if(idx > 0) list = list.slice(0, idx)
-
-          insertions.get(p) match {
-            case None => insertions += p -> list
-            case Some(l) => insertions.update(p, l ++ list)
-          }
-
-          list.length
+      partitions.foreach { case (p, _) =>
+        p.root.set(backups(p))
       }
 
-      pos += n
-    }
-
-    if(meta.isEmpty()){
-
-      println(s"no partition...\n")
-
-      val p = new Partition[T, K, V](DATA_ORDER, META_ORDER, meta)
-      return p.execute(Seq(Insert(data)))
-    }
-
-    insertions.foreach { case (p, list) =>
-      p.execute(Seq(Insert(list)))
-    }
-
-    true
-  }
-
-  def remove(keys: Seq[K]): Boolean = {
-
-    val removals = TrieMap[Partition[T, K, V], Seq[K]]()
-
-    val sorted = keys.sorted
-
-    val size = sorted.length
-    var pos = 0
-
-    while(pos < size) {
-
-      var list = sorted.slice(pos, size)
-      val k = list(0)
-
-      val n = meta.find(k) match {
-        case None => list.length
-        case Some((max, p)) =>
-
-          val idx = list.indexWhere {k => ord.gt(k, max)}
-          list = if(idx > 0) list.slice(0, idx) else list
-
-          removals.get(p) match {
-            case None => removals += p -> list
-            case Some(l) => removals.update(p, l ++ list)
-          }
-
-          list.length
-      }
-
-      pos += n
-    }
-
-    if(removals.isEmpty){
       return false
-    }
-
-    removals.foreach { case (p, keys) =>
-      p.execute(Seq(Delete(keys)))
-    }
-
-    true
-  }
-
-  def update(data: Seq[(K, V)]): Boolean = {
-
-    val updates = TrieMap[Partition[T, K, V], Seq[(K, V)]]()
-
-    val sorted = data.sortBy(_._1)
-
-    val size = sorted.length
-    var pos = 0
-
-    while(pos < size) {
-
-      var list = sorted.slice(pos, size)
-      val (k, _) = list(0)
-
-      val n = meta.find(k) match {
-        case None => list.length
-        case Some((max, p)) =>
-
-          val idx = list.indexWhere {case (k, _) => ord.gt(k, max)}
-          list = if(idx > 0) list.slice(0, idx) else list
-
-          updates.get(p) match {
-            case None => updates += p -> list
-            case Some(l) => updates.update(p, l ++ list)
-          }
-
-          list.length
-      }
-
-      pos += n
-    }
-
-    if(updates.isEmpty){
-      return false
-    }
-
-    updates.foreach { case (p, list) =>
-      p.execute(Seq(Update(list)))
     }
 
     true

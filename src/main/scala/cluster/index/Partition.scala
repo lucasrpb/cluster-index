@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import commands._
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.script.Remove
 import scala.reflect.ClassTag
 
@@ -17,10 +18,34 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
 
   def execute(cmd: Command[T, K, V], index: Block[T, K, V]): Boolean = {
     cmd match {
-      case Insert(data) => index.insert(data)._1
-      case Update(data) => index.update(data)._1
-      case Delete(keys) => index.remove(keys)._1
+      case Add(data) =>
+        val ok = index.insert(data)._1
+
+        if(!ok)
+        println(s"add => ${ok}\n")
+
+        ok
+      case Put(data) =>
+        val ok = index.update(data)._1
+
+        if(!ok)
+        println(s"put => ${ok}\n")
+
+        ok
+      case Delete(keys) =>
+
+        val ok = index.remove(keys)._1
+
+        if(!ok)
+        println(s"delete => ${ok}\n")
+
+        ok
     }
+  }
+
+  def read(keys: Seq[K]): Seq[(K, Option[V])] = {
+    val index = root.get()
+    index.read(keys)
   }
 
   def execute(commands: Seq[Command[T, K, V]]): Boolean = {
@@ -32,13 +57,31 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
 
     val size = commands.length
 
+    val count = commands.filter(_.isInstanceOf[Add[T, K, V]])
+      .map(_.asInstanceOf[Add[T, K, V]].data.length).sum
+
+    if(count > MIN){
+
+      println(s"too many insertions: ${count}!\n")
+
+      return false
+    }
+
     for(i<-0 until size){
-      if(!execute(commands(i), index)) return false
+      if(!execute(commands(i), index)) {
+
+        println("ooopsss!!")
+
+        return false
+      }
     }
 
     if(meta.isEmpty()){
+
+      if(index.isEmpty()) return true
+
       return meta.execute(Seq(
-        Insert(Seq(index.max.get -> this))
+        Add(Seq(index.max.get -> this))
       )) && root.compareAndSet(old, index)
     }
 
@@ -57,7 +100,7 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
         cmds = cmds :+ Delete[T, K, Partition[T, K, V]](Seq(max.get))
       }
 
-      cmds = cmds :+ Insert[T, K, Partition[T, K, V]](Seq(
+      cmds = cmds :+ Add[T, K, Partition[T, K, V]](Seq(
         index.max.get -> this,
         r.max.get -> right
       ))
@@ -77,7 +120,7 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
     if(max.isDefined && nmax.isDefined && !ord.equiv(max.get, nmax.get)){
       return meta.execute(Seq(
         Delete(Seq(max.get)),
-        Insert(Seq(nmax.get -> this))
+        Add(Seq(nmax.get -> this))
       )) && root.compareAndSet(old, index)
     }
 

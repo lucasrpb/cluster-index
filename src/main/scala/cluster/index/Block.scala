@@ -1,6 +1,8 @@
 package cluster.index
 
 import java.util.UUID
+
+import scala.collection.concurrent.TrieMap
 import scala.reflect.ClassTag
 
 class Block[T: ClassTag, K: ClassTag, V: ClassTag](val id: T,
@@ -34,6 +36,18 @@ class Block[T: ClassTag, K: ClassTag, V: ClassTag](val id: T,
     size += 1
 
     true -> idx
+  }
+
+  def read(keys: Seq[K]): Seq[(K, Option[V])] = {
+    keys.map{k =>
+      val (found, pos) = find(k, 0, size - 1)
+
+      if(!found){
+        k -> None
+      } else {
+        k -> Some(this.keys(pos)._2)
+      }
+    }
   }
 
   def insert(k: K, v: V): (Boolean, Int) = {
