@@ -19,8 +19,8 @@ class MainSpec extends FlatSpec {
 
     val rand = ThreadLocalRandom.current()
 
-    val DATA_ORDER = 10//rand.nextInt(2, 10)
-    val META_ORDER = 10//rand.nextInt(2, 10)
+    val DATA_ORDER = 4//rand.nextInt(2, 10)
+    val META_ORDER = 4//rand.nextInt(2, 10)
 
     val DATA_MAX = DATA_ORDER*2 - 1
     val DATA_MIN = DATA_MAX/2
@@ -28,8 +28,8 @@ class MainSpec extends FlatSpec {
     val META_MAX = META_ORDER*2 - 1
     val META_MIN = META_MAX/2
 
-    val DATA_ORDER_PARTITION = 10//rand.nextInt(2, 10)
-    val META_ORDER_PARTITION = 10//rand.nextInt(2, 10)
+    val DATA_ORDER_PARTITION = 4//rand.nextInt(2, 10)
+    val META_ORDER_PARTITION = 4//rand.nextInt(2, 10)
 
     val meta = new Meta[String, Int, Int](DATA_ORDER_PARTITION, META_ORDER_PARTITION)
     val client = new Client[String, Int, Int](DATA_ORDER, META_ORDER, meta)
@@ -42,7 +42,7 @@ class MainSpec extends FlatSpec {
       def insert(): Unit = {
 
         var list = Seq.empty[(Int, Int)]
-        val n = 100//rand.nextInt(1, DATA_MAX)
+        val n = 10//rand.nextInt(1, DATA_MAX)
 
         for(i<-0 until n){
           val k = rand.nextInt(0, MAX_VALUE)
@@ -54,7 +54,6 @@ class MainSpec extends FlatSpec {
 
         commands = commands :+ Add[String, Int, Int](list)
         data = data ++ list
-
       }
 
       def update(): Unit = {

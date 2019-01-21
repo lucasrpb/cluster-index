@@ -67,7 +67,7 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
     }
 
     // Fix the method isFull() in Index...
-    if(index.isFull() /*&& index.root.get.asInstanceOf[MetaBlock[T, K, V]].size > 1*/){
+    if(index.isFull() && index.root.get.asInstanceOf[MetaBlock[T, K, V]].size > 1){
 
       println(s"FULL PARTITION... ${index.size} ${index.MAX}\n")
 
