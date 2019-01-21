@@ -7,7 +7,7 @@
 		revision="0.1"
 		conf="runtime-internal"
 		confs="compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, pom, scala-tool"
-		date="20190121143224"/>
+		date="20190121150131"/>
 	<dependencies>
 		<module organisation="com.github.lucasrpb" name="index_2.12">
 			<revision name="0.4" status="release" pubdate="20190114223534" resolver="sbt-chain" artresolver="sbt-chain" downloaded="false" searched="false" default="false" conf="compile, default(compile)" position="3">

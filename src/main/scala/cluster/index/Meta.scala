@@ -76,5 +76,5 @@ class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
   def inOrder(): Seq[(K, Partition[T, K, V])] = {
     root.get().inOrder()
   }
-
+  
 }
