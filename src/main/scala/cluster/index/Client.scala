@@ -8,52 +8,6 @@ class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
                                                     val META_ORDER: Int,
                                                     val meta: Meta[T, K, V])(implicit val ord: Ordering[K]) {
 
-  def read(keys: Seq[K]): TrieMap[K, Option[V]] = {
-
-    val data = TrieMap[K, Option[V]]()
-
-    val sorted = keys.sorted
-    val size = sorted.length
-    var pos = 0
-
-    val reads = TrieMap[Partition[T, K, V], Seq[K]]()
-
-    while(pos < size) {
-
-      var list = sorted.slice(pos, size)
-      val k = list(0)
-
-      val n = meta.find(k) match {
-        case None => list.length
-        case Some((max, p)) =>
-
-          val idx = list.indexWhere {k => ord.gt(k, max)}
-          list = if(idx > 0) list.slice(0, idx) else list
-
-          reads.get(p) match {
-            case None => reads += p -> list
-            case Some(l) => reads.update(p, l ++ list)
-          }
-
-          list.length
-      }
-
-      pos += n
-    }
-
-    if(reads.isEmpty){
-      return data
-    }
-
-    reads.foreach { case (p, keys) =>
-      p.read(keys).foreach { case (k, v) =>
-        data.put(k, v)
-      }
-    }
-
-    data
-  }
-
   def parseAdd(data: Seq[(K, V)], partitions: TrieMap[Partition[T, K, V], Seq[commands.Command[T, K, V]]]): Unit = {
 
     val sorted = data.sortBy(_._1)
@@ -202,6 +156,7 @@ class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
     }
 
     if(codes.exists(_ == false)){
+
       meta.root.set(metaBackup)
 
       partitions.foreach { case (p, _) =>

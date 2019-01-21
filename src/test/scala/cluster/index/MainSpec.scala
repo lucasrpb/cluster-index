@@ -13,14 +13,14 @@ class MainSpec extends FlatSpec {
     override def compare(x: Int, y: Int): Int =  x - y
   }
 
-  val MAX_VALUE = Int.MaxValue
+  val MAX_VALUE = 1000//Int.MaxValue
 
   def test(): Unit = {
 
     val rand = ThreadLocalRandom.current()
 
-    val DATA_ORDER = 100//rand.nextInt(2, 10)
-    val META_ORDER = 1000//rand.nextInt(2, 10)
+    val DATA_ORDER = 10//rand.nextInt(2, 10)
+    val META_ORDER = 10//rand.nextInt(2, 10)
 
     val DATA_MAX = DATA_ORDER*2 - 1
     val DATA_MIN = DATA_MAX/2
@@ -28,8 +28,11 @@ class MainSpec extends FlatSpec {
     val META_MAX = META_ORDER*2 - 1
     val META_MIN = META_MAX/2
 
-    val meta = new Meta[String, Int, Int](META_MIN, META_MAX)
-    val client = new Client[String, Int, Int](DATA_MIN, DATA_MAX, meta)
+    val DATA_ORDER_PARTITION = 10//rand.nextInt(2, 10)
+    val META_ORDER_PARTITION = 10//rand.nextInt(2, 10)
+
+    val meta = new Meta[String, Int, Int](DATA_ORDER_PARTITION, META_ORDER_PARTITION)
+    val client = new Client[String, Int, Int](DATA_ORDER, META_ORDER, meta)
 
     def transaction(): Seq[Command[String, Int, Int]] = {
 
@@ -39,10 +42,10 @@ class MainSpec extends FlatSpec {
       def insert(): Unit = {
 
         var list = Seq.empty[(Int, Int)]
-        val n = rand.nextInt(1, DATA_MIN)
+        val n = 100//rand.nextInt(1, DATA_MAX)
 
         for(i<-0 until n){
-          val k = rand.nextInt(0, 10)
+          val k = rand.nextInt(0, MAX_VALUE)
 
           if(!data.exists(_._1 == k) && !list.exists(_._1 == k)){
             list = list :+ k -> k
@@ -95,7 +98,7 @@ class MainSpec extends FlatSpec {
       commands
     }
 
-    val n = 10
+    val n = 100
 
     var data = Seq.empty[(Int, Int)]
 

@@ -4,19 +4,16 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 import commands._
-
-import scala.collection.concurrent.TrieMap
-import scala.collection.script.Remove
 import scala.reflect.ClassTag
+import index._
 
-class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
-                                                       val MAX: Int,
+class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
+                                                       val META_ORDER: Int,
                                                        val meta: Meta[T, K, V])(implicit val ord: Ordering[K]) {
 
-  val root = new AtomicReference[Block[T, K, V]](new Block[T, K, V](UUID.randomUUID.toString.asInstanceOf[T],
-    MIN, MAX))
+  val root = new AtomicReference[IndexRef[T, K, V]](new IndexRef[T, K, V](UUID.randomUUID.toString.asInstanceOf[T]))
 
-  def execute(cmd: Command[T, K, V], index: Block[T, K, V]): Boolean = {
+  def execute(cmd: Command[T, K, V], index: Index[T, K, V]): Boolean = {
     cmd match {
       case Add(data) =>
         val ok = index.insert(data)._1
@@ -43,29 +40,13 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
     }
   }
 
-  def read(keys: Seq[K]): Seq[(K, Option[V])] = {
-    val index = root.get()
-    index.read(keys)
-  }
-
   def execute(commands: Seq[Command[T, K, V]]): Boolean = {
 
     val old = root.get()
-    val index = old.copy()
+    val index = new Index[T, K, V](old, DATA_ORDER, META_ORDER)
 
     val max = index.max
-
     val size = commands.length
-
-    val count = commands.filter(_.isInstanceOf[Add[T, K, V]])
-      .map(_.asInstanceOf[Add[T, K, V]].data.length).sum
-
-    if(count > MIN){
-
-      println(s"too many insertions: ${count}!\n")
-
-      return false
-    }
 
     for(i<-0 until size){
       if(!execute(commands(i), index)) {
@@ -82,19 +63,19 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
 
       return meta.execute(Seq(
         Add(Seq(index.max.get -> this))
-      )) && root.compareAndSet(old, index)
+      )) && root.compareAndSet(old, index.ref)
     }
 
     // Fix the method isFull() in Index...
-    if(index.overflow()){
+    if(index.isFull() /*&& index.root.get.asInstanceOf[MetaBlock[T, K, V]].size > 1*/){
 
       println(s"FULL PARTITION... ${index.size} ${index.MAX}\n")
 
-      val r = index.split()
+      val r = index.split().asInstanceOf[Index[T, K, V]]
       var cmds = Seq.empty[Command[T, K, Partition[T, K, V]]]
 
-      val right = new Partition[T, K, V](MIN, MAX, meta)
-      right.root.set(r)
+      val right = new Partition[T, K, V](DATA_ORDER, META_ORDER, meta)
+      right.root.set(r.ref)
 
       if(max.isDefined){
         cmds = cmds :+ Delete[T, K, Partition[T, K, V]](Seq(max.get))
@@ -105,14 +86,14 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
         r.max.get -> right
       ))
 
-      return meta.execute(cmds) && root.compareAndSet(old, index)
+      return meta.execute(cmds) && root.compareAndSet(old, index.ref)
     }
 
     if(max.isDefined && index.isEmpty()){
 
       println(s"EMPTY PARTITION...\n")
 
-      return meta.execute(Seq(Delete(Seq(max.get)))) && root.compareAndSet(old, index)
+      return meta.execute(Seq(Delete(Seq(max.get)))) && root.compareAndSet(old, index.ref)
     }
 
     val nmax = index.max
@@ -121,14 +102,14 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
       return meta.execute(Seq(
         Delete(Seq(max.get)),
         Add(Seq(nmax.get -> this))
-      )) && root.compareAndSet(old, index)
+      )) && root.compareAndSet(old, index.ref)
     }
 
-    root.compareAndSet(old, index)
+    root.compareAndSet(old, index.ref)
   }
 
   def inOrder(): Seq[(K, V)] = {
-    root.get().inOrder()
+    QueryAPI.inOrder(root.get().root)
   }
 
 }

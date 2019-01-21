@@ -3,48 +3,35 @@ package cluster.index
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
+import index._
 import commands._
 import scala.reflect.ClassTag
 
-class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
-                                                  val MAX: Int)(implicit val ord: Ordering[K]) {
+class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
+                                                  val META_ORDER: Int)(implicit val ord: Ordering[K]) {
 
-  val root = new AtomicReference[Block[T, K, Partition[T, K, V]]](new Block[T, K, Partition[T, K, V]](UUID.randomUUID
-    .toString.asInstanceOf[T], MIN, MAX))
+  val root = new AtomicReference[IndexRef[T, K, Partition[T, K, V]]](new IndexRef[T, K, Partition[T, K, V]](UUID
+    .randomUUID.toString.asInstanceOf[T]))
 
   def find(k: K): Option[(K, Partition[T, K, V])] = {
-    val index = root.get()
 
-    if(index.isEmpty()) return None
+    val old = root.get()
+    val index = new Index[T, K, Partition[T, K, V]](old, DATA_ORDER, META_ORDER)
 
-    val p = index.asInstanceOf[Block[T, K, Partition[T, K, V]]]
-    val (_, pos) = p.find(k, 0, p.size - 1)
+    QueryAPI.find(k, old.root)(index.ctx.parents) match {
+      case None => None
+      case Some(p) =>
 
-    Some(p.keys(if(pos < p.size) pos else pos - 1))
-  }
+        val block = p.asInstanceOf[DataBlock[T, K, V]]
+        val (_, pos) = block.find(k, 0, block.size - 1)
 
-  def findSibling(k: K): Option[(K, Partition[T, K, V])] = {
-    val index = root.get()
+        val (_, v) = block.keys(if(pos < block.size) pos else pos - 1)
 
-    if(index.isEmpty()) return None
-
-    val (found, pos) = index.find(k, 0, index.size - 1)
-
-    if(!found) return None
-
-    var idx = pos + 1
-
-    if(idx < index.size){
-      return Some(index.keys(idx))
+        Some(k -> v.asInstanceOf[Partition[T, K, V]])
     }
-
-    idx = pos - 1
-    if(idx < 0) return None
-
-    Some(index.keys(idx))
   }
 
-  def execute(cmd: Command[T, K, Partition[T, K, V]], index: Block[T, K, Partition[T, K, V]]): Boolean = {
+  def execute(cmd: Command[T, K, Partition[T, K, V]], index: Index[T, K, Partition[T, K, V]]): Boolean = {
     cmd match {
       case Add(data) => index.insert(data)._1
       case Put(data) => index.update(data)._1
@@ -54,7 +41,7 @@ class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
 
   def execute(commands: Seq[Command[T, K, Partition[T, K, V]]]): Boolean = {
     val old = root.get()
-    val index = old.copy()
+    val index = new Index[T, K, Partition[T, K, V]](old, DATA_ORDER, META_ORDER)
 
     val size = commands.length
 
@@ -62,19 +49,25 @@ class Meta[T: ClassTag, K: ClassTag, V: ClassTag](val MIN: Int,
       if(!execute(commands(i), index)) return false
     }
 
-    root.compareAndSet(old, index)
+    root.compareAndSet(old, index.ref)
   }
 
   def isEmpty(): Boolean = {
-    root.get().isEmpty()
+    val old = root.get()
+    val index = new Index[T, K, Partition[T, K, V]](old, DATA_ORDER, META_ORDER)
+
+    index.isEmpty()
   }
 
   def isFull(): Boolean = {
-    root.get().isFull()
+    val old = root.get()
+    val index = new Index[T, K, Partition[T, K, V]](old, DATA_ORDER, META_ORDER)
+
+    index.isFull()
   }
 
   def inOrder(): Seq[(K, Partition[T, K, V])] = {
-    root.get().inOrder()
+    QueryAPI.inOrder(root.get().root)
   }
-  
+
 }
