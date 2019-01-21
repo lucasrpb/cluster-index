@@ -39,10 +39,10 @@ class MainSpec extends FlatSpec {
       def insert(): Unit = {
 
         var list = Seq.empty[(Int, Int)]
-        val n = rand.nextInt(1, 5)
+        val n = rand.nextInt(1, DATA_MIN)
 
         for(i<-0 until n){
-          val k = rand.nextInt(0, MAX_VALUE)
+          val k = rand.nextInt(0, 10)
 
           if(!data.exists(_._1 == k) && !list.exists(_._1 == k)){
             list = list :+ k -> k

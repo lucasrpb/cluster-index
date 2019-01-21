@@ -7,10 +7,21 @@
 		revision="0.1"
 		conf="test-internal"
 		confs="compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, pom, scala-tool"
-		date="20190119005145"/>
+		date="20190121143224"/>
 	<dependencies>
+		<module organisation="com.github.lucasrpb" name="index_2.12">
+			<revision name="0.4" status="release" pubdate="20190114223534" resolver="sbt-chain" artresolver="sbt-chain" downloaded="false" searched="false" default="false" conf="compile, default(compile)" position="3">
+				<metadata-artifact status="no" details="" size="1993" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/com.github.lucasrpb/index_2.12/ivy-0.4.xml" searched="false" origin-is-local="true" origin-location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/ivys/ivy.xml"/>
+				<caller organisation="com.github.lucasrpb" name="cluster-index_2.12" conf="test, compile, provided, test-internal, runtime, optional" rev="0.4" rev-constraint-default="0.4" rev-constraint-dynamic="0.4" callerrev="0.1"/>
+				<artifacts>
+					<artifact name="index_2.12" type="jar" ext="jar" status="no" details="" size="81520" time="0" location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/jars/index_2.12.jar">
+						<origin-location is-local="true" location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/jars/index_2.12.jar"/>
+					</artifact>
+				</artifacts>
+			</revision>
+		</module>
 		<module organisation="org.scalatest" name="scalatest_2.12">
-			<revision name="3.0.5" status="release" pubdate="20180129112347" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scalatest.org" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="3">
+			<revision name="3.0.5" status="release" pubdate="20180129112347" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scalatest.org" downloaded="false" searched="false" default="false" conf="default, compile, runtime, default(compile), master" position="4">
 				<license name="the Apache License, ASL Version 2.0" url="http://www.apache.org/licenses/LICENSE-2.0"/>
 				<metadata-artifact status="no" details="" size="4732" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/org.scalatest/scalatest_2.12/ivy-3.0.5.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/scalatest/scalatest_2.12/3.0.5/scalatest_2.12-3.0.5.pom"/>
 				<caller organisation="com.github.lucasrpb" name="cluster-index_2.12" conf="test, compile, provided, test-internal, runtime, optional" rev="3.0.5" rev-constraint-default="3.0.5" rev-constraint-dynamic="3.0.5" callerrev="0.1"/>
@@ -22,7 +33,7 @@
 			</revision>
 		</module>
 		<module organisation="org.scala-lang.modules" name="scala-xml_2.12">
-			<revision name="1.0.6" status="release" pubdate="20161101102105" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scala-lang.org/" downloaded="false" searched="false" default="false" conf="compile, runtime(*), master(compile), runtime, compile(*), master" position="4">
+			<revision name="1.0.6" status="release" pubdate="20161101102105" resolver="sbt-chain" artresolver="sbt-chain" homepage="http://www.scala-lang.org/" downloaded="false" searched="false" default="false" conf="compile, runtime(*), master(compile), runtime, compile(*), master" position="5">
 				<license name="BSD 3-clause" url="http://opensource.org/licenses/BSD-3-Clause"/>
 				<metadata-artifact status="no" details="" size="3126" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/ivy-1.0.6.xml" searched="false" origin-is-local="false" origin-location="file:////Volumes/Users/lucasrpb/.sbt/preloaded/org.scala-lang.modules/scala-xml_2.12/1.0.6/ivys/ivy.xml"/>
 				<caller organisation="org.scalatest" name="scalatest_2.12" conf="default, compile, runtime, master" rev="1.0.6" rev-constraint-default="1.0.6" rev-constraint-dynamic="1.0.6" callerrev="3.0.5"/>
@@ -52,6 +63,7 @@
 				<metadata-artifact status="no" details="" size="2967" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/org.scalactic/scalactic_2.12/ivy-3.0.5.xml" searched="false" origin-is-local="false" origin-location="https://repo1.maven.org/maven2/org/scalactic/scalactic_2.12/3.0.5/scalactic_2.12-3.0.5.pom"/>
 				<caller organisation="org.scalatest" name="scalatest_2.12" conf="default, compile, runtime, master" rev="3.0.5" rev-constraint-default="3.0.5" rev-constraint-dynamic="3.0.5" callerrev="3.0.5"/>
 				<caller organisation="com.github.lucasrpb" name="cluster-index_2.12" conf="test, compile, provided, test-internal, runtime, optional" rev="3.0.5" rev-constraint-default="3.0.5" rev-constraint-dynamic="3.0.5" callerrev="0.1"/>
+				<caller organisation="com.github.lucasrpb" name="index_2.12" conf="compile" rev="3.0.5" rev-constraint-default="3.0.5" rev-constraint-dynamic="3.0.5" callerrev="0.4"/>
 				<artifacts>
 					<artifact name="scalactic_2.12" type="bundle" ext="jar" status="no" details="" size="708098" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/org.scalactic/scalactic_2.12/bundles/scalactic_2.12-3.0.5.jar">
 						<origin-location is-local="false" location="https://repo1.maven.org/maven2/org/scalactic/scalactic_2.12/3.0.5/scalactic_2.12-3.0.5.jar"/>
@@ -67,6 +79,7 @@
 				<caller organisation="org.scalatest" name="scalatest_2.12" conf="default, compile, runtime, master" rev="2.12.8" rev-constraint-default="2.12.8" rev-constraint-dynamic="2.12.8" callerrev="3.0.5"/>
 				<caller organisation="com.github.lucasrpb" name="cluster-index_2.12" conf="test, compile, provided, test-internal, runtime, optional" rev="2.12.8" rev-constraint-default="2.12.8" rev-constraint-dynamic="2.12.8" callerrev="0.1"/>
 				<caller organisation="org.scalactic" name="scalactic_2.12" conf="default, compile, runtime, master" rev="2.12.8" rev-constraint-default="2.12.8" rev-constraint-dynamic="2.12.8" callerrev="3.0.5"/>
+				<caller organisation="com.github.lucasrpb" name="index_2.12" conf="compile" rev="2.12.8" rev-constraint-default="2.12.8" rev-constraint-dynamic="2.12.8" callerrev="0.4"/>
 				<caller organisation="org.scala-lang.modules" name="scala-xml_2.12" conf="compile, runtime" rev="2.12.8" rev-constraint-default="2.12.8" rev-constraint-dynamic="2.12.8" callerrev="1.0.6"/>
 				<artifacts>
 					<artifact name="scala-library" type="jar" ext="jar" status="no" details="" size="5272591" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar">
