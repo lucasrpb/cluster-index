@@ -9,6 +9,7 @@ import index._
 
 class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
                                                        val META_ORDER: Int,
+                                                       val max_levels: Int,
                                                        val meta: Meta[T, K, V])(implicit val ord: Ordering[K]) {
 
   val root = new AtomicReference[IndexRef[T, K, V]](new IndexRef[T, K, V](UUID.randomUUID.toString.asInstanceOf[T]))
@@ -67,14 +68,23 @@ class Partition[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
     }
 
     // Fix the method isFull() in Index...
-    if(index.isFull() && index.root.get.asInstanceOf[MetaBlock[T, K, V]].size > 1){
+    if(index.isFull() /*&& index.root.get.asInstanceOf[MetaBlock[T, K, V]].size > 1*/){
 
-      println(s"FULL PARTITION... ${index.size} ${index.MAX}\n")
+      println(s"FULL PARTITION... index size: ${index.size} levels: ${index.levels} " +
+        s"num blocks: ${index.num_data_blocks} ${index.root.get.asInstanceOf[MetaBlock[T, K, V]].pointers(0)}\n")
+
+      println(s"\n\n")
+      val (levels, nblocks) = QueryAPI.prettyPrint(index.root)
+      println("\n\n")
+
+      println(s"index levels: ${index.levels} levels: $levels\n")
+
+      assert(levels == index.levels && index.num_data_blocks == nblocks)
 
       val r = index.split().asInstanceOf[Index[T, K, V]]
       var cmds = Seq.empty[Command[T, K, Partition[T, K, V]]]
 
-      val right = new Partition[T, K, V](DATA_ORDER, META_ORDER, meta)
+      val right = new Partition[T, K, V](DATA_ORDER, META_ORDER, max_levels, meta)
       right.root.set(r.ref)
 
       if(max.isDefined){

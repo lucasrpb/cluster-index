@@ -6,6 +6,7 @@ import commands._
 
 class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
                                                     val META_ORDER: Int,
+                                                    val max_levels: Int,
                                                     val meta: Meta[T, K, V])(implicit val ord: Ordering[K]) {
 
   def parseAdd(data: Seq[(K, V)], partitions: TrieMap[Partition[T, K, V], Seq[commands.Command[T, K, V]]]): Unit = {
@@ -133,7 +134,7 @@ class Client[T: ClassTag, K: ClassTag, V: ClassTag](val DATA_ORDER: Int,
     if(meta.isEmpty()){
       println(s"\nno partition...\n")
       
-      val p = new Partition[T, K, V](DATA_ORDER, META_ORDER, meta)
+      val p = new Partition[T, K, V](DATA_ORDER, META_ORDER, max_levels, meta)
       return p.execute(commands)
     }
 
