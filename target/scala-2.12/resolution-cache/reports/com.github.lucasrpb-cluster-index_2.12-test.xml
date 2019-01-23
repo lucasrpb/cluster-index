@@ -7,14 +7,14 @@
 		revision="0.1"
 		conf="test"
 		confs="compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, pom, scala-tool"
-		date="20190121225306"/>
+		date="20190122220247"/>
 	<dependencies>
 		<module organisation="com.github.lucasrpb" name="index_2.12">
 			<revision name="0.4" status="release" pubdate="20190114223534" resolver="sbt-chain" artresolver="sbt-chain" downloaded="false" searched="false" default="false" conf="compile, default(compile)" position="3">
 				<metadata-artifact status="no" details="" size="1993" time="0" location="/Volumes/Users/lucasrpb/.ivy2/cache/com.github.lucasrpb/index_2.12/ivy-0.4.xml" searched="false" origin-is-local="true" origin-location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/ivys/ivy.xml"/>
 				<caller organisation="com.github.lucasrpb" name="cluster-index_2.12" conf="test, compile, runtime" rev="0.4" rev-constraint-default="0.4" rev-constraint-dynamic="0.4" callerrev="0.1"/>
 				<artifacts>
-					<artifact name="index_2.12" type="jar" ext="jar" status="no" details="" size="81451" time="0" location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/jars/index_2.12.jar">
+					<artifact name="index_2.12" type="jar" ext="jar" status="no" details="" size="81748" time="0" location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/jars/index_2.12.jar">
 						<origin-location is-local="true" location="/Volumes/Users/lucasrpb/.ivy2/local/com.github.lucasrpb/index_2.12/0.4/jars/index_2.12.jar"/>
 					</artifact>
 				</artifacts>

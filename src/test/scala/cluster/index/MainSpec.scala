@@ -10,7 +10,7 @@ import org.scalatest.FlatSpec
 class MainSpec extends FlatSpec {
 
   implicit val ord = new Ordering[Int] {
-    override def compare(x: Int, y: Int): Int =  x - y
+    override def compare(x: Int, y: Int): Int = x - y
   }
 
   val MAX_VALUE = 1000//Int.MaxValue
@@ -32,7 +32,7 @@ class MainSpec extends FlatSpec {
     val META_ORDER_PARTITION = 4//rand.nextInt(2, 10)
 
     val meta = new Meta[String, Int, Int](DATA_ORDER_PARTITION, META_ORDER_PARTITION)
-    val client = new Client[String, Int, Int](DATA_ORDER, META_ORDER, 2, meta)
+    val client = new Client[String, Int, Int](DATA_ORDER, META_ORDER, 3, meta)
 
     def transaction(): Seq[Command[String, Int, Int]] = {
 
@@ -138,7 +138,6 @@ class MainSpec extends FlatSpec {
 
     for(i<-0 until n){
       test()
-
     }
 
   }
